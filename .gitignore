@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+venv/
+uv.lock
+data/cache/
+data/processed/
+*.parquet
+*.csv
+.DS_Store
