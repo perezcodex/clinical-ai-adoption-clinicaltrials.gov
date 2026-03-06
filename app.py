@@ -33,11 +33,19 @@ from src.charts import (
     chart_volume_leaders,
     chart_world_map,
 )
-from src.fetch import fetch_ai_trials
+from src.fetch import fetch_ai_trials as _fetch_ai_trials_raw
 
 logging.basicConfig(level=logging.INFO)
 
 _CACHE_PATH = Path("data/cache/ctgov_ai_trials.parquet")
+
+
+@st.cache_data(ttl=86_400, show_spinner=False)
+def fetch_ai_trials(force_refresh: bool = False) -> pd.DataFrame:
+    return _fetch_ai_trials_raw(
+        cache_path=_CACHE_PATH,
+        force_refresh=force_refresh,
+    )
 
 # ── Page config ───────────────────────────────────────────────────────────────
 
@@ -123,36 +131,29 @@ with st.sidebar:
 # ── Fetch handler ─────────────────────────────────────────────────────────────
 
 if fetch_btn:
-    status_el = st.empty()
-    with st.spinner("Fetching trials from ClinicalTrials.gov…"):
+    with st.spinner("Fetching trials from ClinicalTrials.gov… (1–3 min)"):
         try:
-            df_new = fetch_ai_trials(
-                cache_path=_CACHE_PATH,
-                force_refresh=True,
-                status_placeholder=status_el,
-            )
+            fetch_ai_trials.clear()
+            df_new = fetch_ai_trials(force_refresh=True)
             st.session_state["df"] = df_new
-            # Reset slider bounds after new data
             st.session_state.pop("year_slider", None)
-            status_el.empty()
             st.success(
                 f"Loaded **{len(df_new):,}** unique AI/LLM trials "
                 f"from ClinicalTrials.gov."
             )
             st.rerun()
         except Exception as exc:
-            status_el.empty()
             st.error(f"Fetch failed: {exc}")
             st.stop()
 
 # ── Auto-load from cache on first visit ──────────────────────────────────────
 
-if st.session_state.get("df") is None and _CACHE_PATH.exists():
-    with st.spinner("Loading from cache…"):
-        st.session_state["df"] = fetch_ai_trials(
-            cache_path=_CACHE_PATH,
-            force_refresh=False,
-        )
+if st.session_state.get("df") is None:
+    with st.spinner("Loading…"):
+        try:
+            st.session_state["df"] = fetch_ai_trials(force_refresh=False)
+        except Exception:
+            pass
 
 # ── Guard — need data ─────────────────────────────────────────────────────────
 
