@@ -314,16 +314,25 @@ def chart_cagr_accelerators(
         always_include = _US_VARIANTS
 
     growth = build_growth_table(counts, year_start, year_end)
+    # Require at least 1 trial in year_start (CAGR undefined from zero)
+    growth = growth[growth["count_start"] > 0]
     growth = growth[growth["cagr_pct"].apply(
         lambda v: isinstance(v, float) and not math.isnan(v) and not math.isinf(v)
     )]
 
     if growth.empty:
         fig = go.Figure()
-        fig.update_layout(
-            title=f"No CAGR data for {year_start}→{year_end} — both years must be in dataset",
-            **_LAYOUT,
+        fig.add_annotation(
+            text=(
+                f"No CAGR data for {year_start}→{year_end}.<br>"
+                f"CAGR requires countries to have ≥1 trial in {year_start}.<br>"
+                f"Try moving the start year forward (e.g. 2023+)."
+            ),
+            xref="paper", yref="paper", x=0.5, y=0.5,
+            showarrow=False, font=dict(size=13, color="grey"),
+            align="center",
         )
+        fig.update_layout(title=f"Fastest Growing Countries — CAGR {year_start}→{year_end}", **_LAYOUT)
         return fig
 
     top = growth.nlargest(n, "cagr_pct").copy()

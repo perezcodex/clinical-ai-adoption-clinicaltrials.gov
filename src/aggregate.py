@@ -89,7 +89,10 @@ def build_growth_table(
     Returns columns: [country, count_start, count_end, abs_growth, cagr_pct]
     """
     periods = year_end - year_start
-    all_countries = counts["country"].unique()
+    # Only compute CAGR for countries present in at least one boundary year
+    countries_start = set(counts[counts["year"] == year_start]["country"])
+    countries_end   = set(counts[counts["year"] == year_end  ]["country"])
+    all_countries   = countries_start | countries_end
     rows = []
     for c in all_countries:
         cd = counts[counts["country"] == c]
