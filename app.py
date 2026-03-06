@@ -86,8 +86,10 @@ def _cache_age_str() -> str:
 def _year_bounds(df: pd.DataFrame) -> tuple[int, int]:
     valid = df["year"].dropna()
     if valid.empty:
-        return 2016, 2026
-    return int(valid.min()), int(valid.max())
+        return 2016, 2025
+    # Cap default end at previous year — current year is always incomplete
+    last_complete = datetime.now().year - 1
+    return int(valid.min()), min(int(valid.max()), last_complete)
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -113,7 +115,7 @@ with st.sidebar:
     if df_loaded is not None:
         _mn, _mx = _year_bounds(df_loaded)
     else:
-        _mn, _mx = 2016, 2026
+        _mn, _mx = 2016, 2025
 
     year_range = st.slider(
         "Year range",
